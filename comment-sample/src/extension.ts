@@ -56,8 +56,9 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		thread.contextValue = undefined;
+		thread.contextValue = 'unresolved';
 		thread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
+		thread.state = vscode.CommentThreadState.Unresolved;
 		if (reply.text) {
 			const newComment = new NoteComment(reply.text, vscode.CommentMode.Preview, { name: 'vscode' }, thread);
 			thread.comments = [...thread.comments, newComment].map(comment => {
@@ -132,11 +133,24 @@ export function activate(context: vscode.ExtensionContext) {
 		commentController.dispose();
 	}));
 
+	context.subscriptions.push(vscode.commands.registerCommand('mywiki.resolveNote', (thread: vscode.CommentThread) => {
+		thread.state = vscode.CommentThreadState.Resolved;
+		thread.contextValue = 'resolved';
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('mywiki.unresolveNote', (thread: vscode.CommentThread) => {
+		thread.state = vscode.CommentThreadState.Unresolved;
+		thread.contextValue = 'unresolved';
+	}));
+
 	function replyNote(reply: vscode.CommentReply) {
 		const thread = reply.thread;
 		const newComment = new NoteComment(reply.text, vscode.CommentMode.Preview, { name: 'vscode' }, thread, thread.comments.length ? 'canDelete' : undefined);
 		if (thread.contextValue === 'draft') {
 			newComment.label = 'pending';
+		} else {
+			thread.contextValue = 'unresolved';
+			thread.state = vscode.CommentThreadState.Unresolved;
 		}
 
 		thread.comments = [...thread.comments, newComment];
